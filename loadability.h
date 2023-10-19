@@ -1,22 +1,30 @@
 #ifndef LOADABILITY_H
 #define LOADABILITY_H
 
-#pragma once
-#pragma comment(lib,"pdh.lib")
-
 #define TXTLOG "log.txt"
 
-#include <QFile>
-#include <tchar.h>
-#include <windows.h>
+// #include <QFile>
+
+#ifdef _WIN32
+    #include <tchar.h>
+    #include <windows.h>
+    #include <pdh.h>
+#else
+    #include "sys/types.h"
+    #include "sys/sysinfo.h"
+    #include "stdio.h"
+    #include "unistd.h"
+#endif
+
 #include <thread>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <pdh.h>
 #include <fstream>
 #include <iostream>
 #include <cmath>
+
+#include "other.h"
 
 class Loadability
 {
@@ -46,13 +54,13 @@ public:
         static std::vector<std::pair<std::string, bool>> orderAndVisib = { { "RAM", true } , { "VRAM", true }, { "CPU", true }, { "NETWORK", true } };
         return orderAndVisib;
     }
-
 private:
     void writeInTextFile();
     void updateVisualRecources(bool cpuStatus, bool memStatus, bool netStatus);
 
     double getCPUCurrentValue();
-    double GetNetworkUsage();
+    double getNetworkUsage();
+    std::pair<double, double> getMemoryUsage();
 
     std::vector<double> getResult(bool cpuStatus, bool memStatus, bool netStatus);
     std::mutex protectResourceGetter;

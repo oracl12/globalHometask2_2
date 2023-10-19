@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+
 #include <iostream>
+
 #include <QIntValidator>
 
 MainWindow::MainWindow(QWidget *parent)

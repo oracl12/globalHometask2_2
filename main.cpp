@@ -1,15 +1,19 @@
-#include "mainwindow.h"
+// #include "mainwindow.h"
 #include "loadability.h"
 
-#include <QApplication>
+// #include <QApplication>
 
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    // QApplication a(argc, argv);
     Loadability load(true, true, true);
-    MainWindow w;
-    w.setFixedSize(1280, 720);
-    w.show();
-    return a.exec();
+
+    // load.getNetworkUsage();
+    load.getCPUCurrentValue();
+    // MainWindow w;
+    // w.setFixedSize(1280, 720);
+    // w.show();
+    // return a.exec();
+    return 0;
 }
