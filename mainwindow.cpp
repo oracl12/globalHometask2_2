@@ -1,9 +1,9 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-#include <iostream>
-
-#include <QIntValidator>
+const QFont fontErrorText("Arial", 12);
+const QFont fontDesription("Arial", 10);
+const QFont fontWait("Arial", 30);
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -25,14 +25,10 @@ void MainWindow::on_lineEdit_returnPressed()
     Loadability::setPeriod(enteredText.toInt());
 }
 
-QFont fontErrorText("Arial", 12);
-QFont fontDesription("Arial", 5);
-QFont fontWait("Arial", 30);
-
 void MainWindow::paintEvent(QPaintEvent *event){
     QPainter painter(this);
 
-//    // 0 ram, 1- vram, 2 - cpu, 3 -
+    // 0 ram, 1- vram, 2 - cpu, 3 - network
     auto generelInfo = Loadability::getResources();
     if (generelInfo.empty()) {
         painter.setFont(fontWait);
@@ -46,18 +42,15 @@ void MainWindow::paintEvent(QPaintEvent *event){
     }
 
     update();
-//    std::cout << generelInfo[0] << std::endl;
-//    std::cout << generelInfo[1] << std::endl;
-//    std::cout << generelInfo[2] << std::endl;
-//    std::cout << generelInfo[3] << std::endl;
 
-//     Memory RAM
-    for (int i = 0; i < generelInfo.size(); i++)
+    //  Except network
+    for (int i = 0; i < generelInfo.size() - 1; i++)
     {
         if (Loadability::getOrderAndVisibOfInfo()[i].second) {
             if (generelInfo[i] != -1.0)
             {
                 int height = (generelInfo[i] * 200) / 100;
+
                 painter.setBrush(Qt::red);
                 painter.drawRect(QRect(200 * (i + 1), 120, 50, 200));
 
@@ -70,6 +63,21 @@ void MainWindow::paintEvent(QPaintEvent *event){
                 QPointF position(170 * (i + 1), 120);
                 painter.drawText(position, "Cannot get " + QString::fromStdString(Loadability::getOrderAndVisibOfInfo()[i].first));
             }
+        }
+    }
+    if (Loadability::getOrderAndVisibOfInfo()[3].second) {
+        QPointF position(170 * (3 + 1), 120);
+        if (generelInfo[3] != -1.0)
+        {
+            painter.setFont(fontDesription);
+            painter.setPen(Qt::black);
+
+            painter.drawText(position, QString::fromStdString(std::to_string((int) generelInfo[3]) + " packets/second"));
+        } else {
+            painter.setFont(fontErrorText);
+            painter.setPen(Qt::blue);
+
+            painter.drawText(position, "Cannot get " + QString::fromStdString(Loadability::getOrderAndVisibOfInfo()[3].first));
         }
     }
 }

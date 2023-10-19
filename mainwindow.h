@@ -3,7 +3,11 @@
 
 #include <QMainWindow>
 #include <QPainter>
+#include <QIntValidator>
+
 #include "loadability.h"
+
+#include <iostream>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -18,13 +22,6 @@ public:
     ~MainWindow();
 
     virtual void paintEvent(QPaintEvent *event);
-
-
-    int defaultPeriod = 5;
-    bool defaultCpuStatus = true;
-    bool defaultMemory = true;
-    bool defaultVMemory = true;
-    bool defaultNetwork = true;
 private slots:
     void on_lineEdit_returnPressed();
 

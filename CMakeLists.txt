@@ -26,6 +26,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         loadabiity.cpp
         loadability.h
+        other.cpp
+        other.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET 222 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -45,7 +47,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(222 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PDH_LIBRARY})
+target_link_libraries(222 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PDH_LIBRARY} iphlpapi)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

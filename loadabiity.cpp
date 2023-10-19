@@ -4,13 +4,35 @@
 #include <QTextStream>
 #include <QDebug>
 
-static unsigned long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle;
-
 std::mutex Loadability::protectResources;
 std::vector<double> Loadability::resources;
 int Loadability::period = 3;
 
+#ifdef _WIN32
+ULONGLONG GetTotalPacketsReceived() {
+    MIB_IPSTATS ipStats;
+    if (GetIpStatistics(&ipStats) != NO_ERROR) {
+        std::cerr << "Error getting IP statistics" << std::endl;
+        return -1;
+    }
+    return ipStats.dwInReceives;
+}
+
+ULONGLONG GetTotalPacketsSent() {
+    MIB_IPSTATS ipStats;
+    if (GetIpStatistics(&ipStats) != NO_ERROR) {
+        std::cerr << "Error getting IP statistics" << std::endl;
+        return -1;
+    }
+    return ipStats.dwOutRequests;
+}
+#endif
+
+
+#ifdef __linux__
 struct sysinfo memInfo;
+
+static unsigned long long lastTotalUser, lastTotalUserLow, lastTotalSys, lastTotalIdle;
 
 void initProc()
 {
@@ -22,28 +44,50 @@ void initProc()
         fscanf(file, "cpu %llu %llu %llu %llu", &lastTotalUser, &lastTotalUserLow, &lastTotalSys, &lastTotalIdle);
         fclose(file);
         counter++;
-        Sleep(1);
+        SleepS(1);
     }
 }
+#endif
+
+static PDH_HQUERY cpuQuery;
+static PDH_HCOUNTER cpuTotal;
 
 double Loadability::getCPUCurrentValue()
 {
 #ifdef __WIN32
-    PDH_HQUERY cpuQuery;
-    PDH_HCOUNTER cpuTotal;
-    PdhOpenQuery(NULL, NULL, &cpuQuery);
-    //    PdhAddEnglishCounter(cpuQuery, L"\\Processor(_Total)\\% Processor Time", NULL, &cpuTotal);
-    PdhAddEnglishCounter(cpuQuery, L"\\Processor(*)\\% Processor Time", NULL, &cpuTotal);
-    PdhCollectQueryData(cpuQuery);
+//    FILETIME idleTimePrev, kernelTimePrev, userTimePrev;
+//    FILETIME idleTimeNow, kernelTimeNow, userTimeNow;
 
-    PDH_FMT_COUNTERVALUE counterVal;
+//    if (GetSystemTimes(&idleTimePrev, &kernelTimePrev, &userTimePrev)) {
+//        // Sleep for a short period to measure usage over time
+//        Sleep(1000); // Sleep for 1 second
 
-    Sleep(1000);
-    PdhCollectQueryData(cpuQuery);
-    Sleep(1000);
-    PdhGetFormattedCounterValue(cpuTotal, PDH_FMT_DOUBLE, NULL, &counterVal);
-    return ((int)counterVal.doubleValue == 0) ? -1.0 : counterVal.doubleValue;
+//        if (GetSystemTimes(&idleTimeNow, &kernelTimeNow, &userTimeNow)) {
+//            // Calculate time intervals
+//            ULONGLONG prevIdleTime = ((ULONGLONG)idleTimePrev.dwHighDateTime << 32) + idleTimePrev.dwLowDateTime;
+//            ULONGLONG prevKernelTime = ((ULONGLONG)kernelTimePrev.dwHighDateTime << 32) + kernelTimePrev.dwLowDateTime;
+//            ULONGLONG prevUserTime = ((ULONGLONG)userTimePrev.dwHighDateTime << 32) + userTimePrev.dwLowDateTime;
 
+//            ULONGLONG nowIdleTime = ((ULONGLONG)idleTimeNow.dwHighDateTime << 32) + idleTimeNow.dwLowDateTime;
+//            ULONGLONG nowKernelTime = ((ULONGLONG)kernelTimeNow.dwHighDateTime << 32) + kernelTimeNow.dwLowDateTime;
+//            ULONGLONG nowUserTime = ((ULONGLONG)userTimeNow.dwHighDateTime << 32) + userTimeNow.dwLowDateTime;
+
+//            // Calculate time differences
+//            ULONGLONG totalDelta = (nowIdleTime - prevIdleTime) + (nowKernelTime - prevKernelTime) + (nowUserTime - prevUserTime);
+//            ULONGLONG userDelta = nowUserTime - prevUserTime;
+
+//            // Calculate CPU usage as a percentage
+//            double cpuUsage = (1.0 - ((double)nowIdleTime - prevIdleTime) / totalDelta) * 100.0;
+
+//            std::cout << "CPU Usage: " << cpuUsage << "%" << std::endl;
+//        } else {
+//            std::cerr << "GetSystemTimes (2nd call) failed with error code: " << GetLastError() << std::endl;
+//        }
+//    } else {
+//        std::cerr << "GetSystemTimes (1st call) failed with error code: " << GetLastError() << std::endl;
+//    }
+
+    return -1.0;
 #else
     initProc();
 
@@ -84,42 +128,28 @@ double Loadability::getCPUCurrentValue()
 
 double Loadability::getNetworkUsage()
 {
-// bytes received/send for second
 #ifdef __WIN32
-    PDH_HQUERY query;
-    PDH_HCOUNTER networkCounter;
-
-    PDH_STATUS status = PdhOpenQuery(nullptr, 0, &query);
-    if (status != ERROR_SUCCESS)
-    {
-        std::cerr << "PdhOpenQuery error: " << status << std::endl;
-        return -1.0; // Handle the error
+    ULONGLONG initialReceived = GetTotalPacketsReceived();
+    ULONGLONG initialSent = GetTotalPacketsSent();
+    if (initialReceived == -1.0 || initialSent == -1.0) {
+        return -1.0;
     }
 
-    // Add the network counter
-    status = PdhAddCounterW(query, L"\\Network Interface(*)\\Bytes Total/sec", 0, &networkCounter);
-    if (status != ERROR_SUCCESS)
-    {
-        std::cerr << "PdhAddCounter error: " << status << std::endl;
-        return -1.0; // Handle the error
+    SleepS(1);
+
+    ULONGLONG finalReceived = GetTotalPacketsReceived();
+    ULONGLONG finalSent = GetTotalPacketsSent();
+    if (initialReceived == -1.0 || initialSent == -1.0) {
+        return -1.0;
     }
 
-    status = PdhCollectQueryData(query);
-    if (status != ERROR_SUCCESS)
-    {
-        std::cerr << "PdhCollectQueryData error: " << status << std::endl;
-        return -1.0; // Handle the error
-    }
+    ULONGLONG packetsReceivedPerSecond = finalReceived - initialReceived;
+    ULONGLONG packetsSentPerSecond = finalSent - initialSent;
 
-    PDH_FMT_COUNTERVALUE counterValue;
-    status = PdhGetFormattedCounterValue(networkCounter, PDH_FMT_LARGE, nullptr, &counterValue);
-    if (status != ERROR_SUCCESS)
-    {
-        std::cerr << "PdhGetFormattedCounterValue error: " << status << std::endl;
-        return -1.0; // Handle the error
-    }
+    std::cout << "Packets Received per Second: " << packetsReceivedPerSecond << std::endl;
+    std::cout << "Packets Sent per Second: " << packetsSentPerSecond << std::endl;
 
-    return static_cast<double>(counterValue.largeValue);
+    return (double)(packetsReceivedPerSecond + packetsSentPerSecond);
 #else
 
     std::ifstream myfile("/proc/net/dev");
@@ -152,7 +182,7 @@ double Loadability::getNetworkUsage()
 
     std::cout << totalReceivedBytes1 << std::endl;
 
-    Sleep(1);
+    SleepS(1);
 
     myfile.clear();
     myfile.seekg(0, std::ios::beg);
@@ -224,23 +254,23 @@ std::pair<double, double> Loadability::getMemoryUsage()
     {
         double availableVRAMPercentage = static_cast<double>(memory_status.ullAvailVirtual) / memory_status.ullTotalVirtual * 100.0;
         double availableRAMPercentage = static_cast<double>(memory_status.ullAvailPhys) / memory_status.ullTotalPhys * 100.0;
-        return { availableRAMPercentage, availableVRAMPercentage }
+        return { availableRAMPercentage, availableVRAMPercentage };
     }
     else
     {
-        return { -1.0, -1.0 }
+        return { -1.0, -1.0 };
     }
 #endif
 }
 
-Loadability::Loadability(bool cpuStatus, bool memStatus, bool netStatus)
+Loadability::Loadability()
 {
     writerThread = std::thread([this]() {
         writeInTextFile();
     });
 
-    resourceUpdater = std::thread([this, cpuStatus, memStatus, netStatus]() {
-        updateVisualRecources(cpuStatus, memStatus, netStatus);
+    resourceUpdater = std::thread([this]() {
+        updateVisualRecources();
     });
 
     std::clog << "LOADABILITY: THREADS CREATED" << std::endl;
@@ -273,7 +303,7 @@ void Loadability::writeInTextFile()
         {
             std::cout << "Lock" << std::endl;
             std::lock_guard<std::mutex> lock(protectResourceGetter);
-            result = getResult(true, true, true);
+            result = getResult();
             std::cout << "UnLock" << std::endl;
         }
         for (const auto &r : result)
@@ -302,12 +332,12 @@ void Loadability::writeInTextFile()
         }
 
         std::cout << "Current period" << period << std::endl;
-        Sleep(period);
+        SleepS(period);
     }
     outputFile.close();
 }
 
-void Loadability::updateVisualRecources(bool cpuStatus, bool memStatus, bool netStatus)
+void Loadability::updateVisualRecources()
 {
     while (true)
     {
@@ -316,7 +346,7 @@ void Loadability::updateVisualRecources(bool cpuStatus, bool memStatus, bool net
             {
                 std::lock_guard<std::mutex> lock(protectResourceGetter);
                 std::cout << "UPDATING RESOURCES" << std::endl;
-                resources = getResult(cpuStatus, memStatus, netStatus);
+                resources = getResult();
             }
         }
 
@@ -325,17 +355,18 @@ void Loadability::updateVisualRecources(bool cpuStatus, bool memStatus, bool net
             if (stop)
                 break;
         }
-        Sleep(0.1);
+        SleepS(0.1);
     }
 }
 
-std::vector<double> Loadability::getResult(bool cpuStatus, bool memStatus, bool netStatus)
+std::vector<double> Loadability::getResult()
 {
     std::vector<double> systemInfo;
 
     // Mem
     systemInfo.push_back(getMemoryUsage().first);
     systemInfo.push_back(getMemoryUsage().second);
+
     // CPU
     systemInfo.push_back(getCPUCurrentValue());
 

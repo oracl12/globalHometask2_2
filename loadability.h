@@ -3,12 +3,17 @@
 
 #define TXTLOG "log.txt"
 
-// #include <QFile>
+#include <QFile>
 
 #ifdef _WIN32
     #include <tchar.h>
     #include <windows.h>
     #include <pdh.h>
+    #include <processthreadsapi.h>
+    #include <iphlpapi.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "IPHLPAPI.lib")
 #else
     #include "sys/types.h"
     #include "sys/sysinfo.h"
@@ -29,13 +34,13 @@
 class Loadability
 {
 public:
-    Loadability(bool cpuStatus, bool memStatus, bool netStatus);// create a thread which
+    Loadability();
 
     Loadability(const Loadability &) = delete;
 
     Loadability &operator=(const Loadability &) = delete;
 
-    ~Loadability(); // stop threads file
+    ~Loadability();
 
     static std::vector<double> getResources() {
 //        std::lock_guard<std::mutex> lock(protectResources);
@@ -56,13 +61,13 @@ public:
     }
 private:
     void writeInTextFile();
-    void updateVisualRecources(bool cpuStatus, bool memStatus, bool netStatus);
+    void updateVisualRecources();
 
     double getCPUCurrentValue();
     double getNetworkUsage();
     std::pair<double, double> getMemoryUsage();
 
-    std::vector<double> getResult(bool cpuStatus, bool memStatus, bool netStatus);
+    std::vector<double> getResult();
     std::mutex protectResourceGetter;
 
     static std::mutex protectResources;
