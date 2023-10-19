@@ -1,1 +1,7 @@
+.qt
+config.tests
+CMakeFiles
 .vscode
+
+cmake_install.cmake
+Makefile

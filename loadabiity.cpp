@@ -9,6 +9,9 @@ std::vector<double> Loadability::resources;
 int Loadability::period = 3;
 
 #ifdef _WIN32
+static PDH_HQUERY cpuQuery;
+static PDH_HCOUNTER cpuTotal;
+
 ULONGLONG GetTotalPacketsReceived() {
     MIB_IPSTATS ipStats;
     if (GetIpStatistics(&ipStats) != NO_ERROR) {
@@ -48,9 +51,6 @@ void initProc()
     }
 }
 #endif
-
-static PDH_HQUERY cpuQuery;
-static PDH_HCOUNTER cpuTotal;
 
 double Loadability::getCPUCurrentValue()
 {

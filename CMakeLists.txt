@@ -9,9 +9,16 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (LINUX)
+    set(CMAKE_PREFIX_PATH "/home/oracl/Qt/6.6.0/gcc_64/lib/cmake")
+endif (LINUX)
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_library(PDH_LIBRARY Pdh )
+
+if (WIN32)
+find_library(PDH_LIBRARY Pdh)
+endif (WIN32)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -29,17 +36,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         other.cpp
         other.h
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET 222 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+
 else()
     if(ANDROID)
         add_library(222 SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(222
             ${PROJECT_SOURCES}
@@ -47,11 +49,12 @@ else()
     endif()
 endif()
 
-target_link_libraries(222 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PDH_LIBRARY} iphlpapi)
+if (WIN32)
+    target_link_libraries(222 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${PDH_LIBRARY} iphlpapi)
+else()
+   target_link_libraries(222 PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+endif()
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.222)
 endif()

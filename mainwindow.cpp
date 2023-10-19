@@ -52,27 +52,33 @@ void MainWindow::paintEvent(QPaintEvent *event){
                 int height = (generelInfo[i] * 200) / 100;
 
                 painter.setBrush(Qt::red);
-                painter.drawRect(QRect(200 * (i + 1), 120, 50, 200));
+                painter.drawRect(QRect(200 * (i + 1) + (50 * i), 120, 50, 200));
 
                 painter.setBrush(Qt::gray);
-                painter.drawRect(QRect(200 * (i + 1), 120, 50, height));
+                painter.drawRect(QRect(200 * (i + 1) + (50 * i), 120, 50, height));
             } else {
                 painter.setFont(fontErrorText);
                 painter.setPen(Qt::blue);
 
-                QPointF position(170 * (i + 1), 120);
+                QPointF position(170 * (i + 1) + (50 * i), 120);
                 painter.drawText(position, "Cannot get " + QString::fromStdString(Loadability::getOrderAndVisibOfInfo()[i].first));
             }
         }
     }
     if (Loadability::getOrderAndVisibOfInfo()[3].second) {
-        QPointF position(170 * (3 + 1), 120);
+        QPointF position(170 * (3 + 1) + (50 * 5), 120);
         if (generelInfo[3] != -1.0)
         {
             painter.setFont(fontDesription);
             painter.setPen(Qt::black);
 
-            painter.drawText(position, QString::fromStdString(std::to_string((int) generelInfo[3]) + " packets/second"));
+#ifdef __linux__
+            std::string metric = " KB";
+#else
+            std::string metric = " packets";
+#endif
+
+            painter.drawText(position, QString::fromStdString(std::to_string((int) generelInfo[3]) + metric + "/second"));
         } else {
             painter.setFont(fontErrorText);
             painter.setPen(Qt::blue);
