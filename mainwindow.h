@@ -4,10 +4,10 @@
 #include <QMainWindow>
 #include <QPainter>
 #include <QIntValidator>
-
-#include "loadability.h"
-
+#include <QDateTime>
 #include <iostream>
+
+#include "headers/loadability.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,6 +22,12 @@ public:
     ~MainWindow();
 
     virtual void paintEvent(QPaintEvent *event);
+
+    void drawWaitMessage(QPainter& painter);
+
+    void drawResourceBar(QPainter& painter, double value, int index);
+
+    void drawNetworkInfo(QPainter& painter, double value);
 private slots:
     void on_lineEdit_returnPressed();
 
@@ -35,5 +41,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    void updateCheckBoxState(int index, int arg1);
+    bool shouldUpdateResourceData();
 };
 #endif // MAINWINDOW_H

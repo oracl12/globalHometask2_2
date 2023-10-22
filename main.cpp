@@ -1,8 +1,7 @@
 #include "mainwindow.h"
-#include "loadability.h"
+#include "headers/loadability.h"
 
 #include <QApplication>
-
 
 int main(int argc, char *argv[])
 {

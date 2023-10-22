@@ -31,10 +31,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(222
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        loadabiity.cpp
-        loadability.h
-        other.cpp
-        other.h
+        src/loadabiity.cpp
+        headers/loadability.h
+        headers/other.h
+        src/other.cpp
     )
 
 else()
