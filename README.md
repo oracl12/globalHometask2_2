@@ -5,6 +5,9 @@ OS: **Windows > 8.1; Linux**
 Soft: **Qt libs || Qt Creator last-v** -> **Qt > 6**
 Maker: **cmake**
 
+## Note:
+While building on linux do not forget to export env which will contain address of cmake folder
+
 # Diagram:
 https://miro.com/app/board/uXjVNXsXl_Y=/?share_link_id=55229525742
 
