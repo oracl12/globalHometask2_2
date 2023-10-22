@@ -15,7 +15,6 @@
     #include <processthreadsapi.h>
     #include <iphlpapi.h>
     #include <ws2tcpip.h>
-//    #pragma comment(lib, "IPHLPAPI.lib")
 #else
     #include "sys/types.h"
     #include "sys/sysinfo.h"
